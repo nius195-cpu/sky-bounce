@@ -29,6 +29,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: '13114758'
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
 
       - name: Install SDK matching Godot 4.6.3
         run: sdkmanager 'platform-tools' 'platforms;android-36' 'build-tools;36.1.0' 'ndk;29.0.14206865'

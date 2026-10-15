@@ -69,7 +69,31 @@ func run() -> void:
 	sim.step(1.0 / 120, 240, SIZE)
 	check(sim.ball.distance_to(initial_ball) > early_distance * 2, "High scores move the ball faster in actual simulation time")
 	sim.reset(SIZE)
-	check(is_equal_approx(sim.speed_multiplier(), 1), "Restart restores starting speed")
+	check(is_equal_approx(sim.speed_multiplier(), Sim.START_SPEED), "Restart restores starting speed")
+	check(sim.speed_multiplier() <= 0.7, "Opening pace is at least 30 percent slower than version 1.1.0")
+	sim.bounce_rng.seed = 42
+	var early_heights: Array[float] = []
+	for i in range(40):
+		early_heights.append(sim.next_bounce_height())
+	check(early_heights.min() >= 240 and early_heights.max() <= 300, "Beginner bounce heights stay within a gentle band")
+	check(early_heights.max() - early_heights.min() > 30, "Bounce heights vary rather than repeating a fixed arc")
+	var minimum_airtime: float = 2 * sqrt(2 * float(early_heights.min()) / Sim.GRAVITY) / sim.speed_multiplier()
+	check(minimum_airtime > 2.5, "Low-score bounces allow over 2.5 seconds of reaction time")
+	sim.score = 100
+	var late_heights: Array[float] = []
+	for i in range(40):
+		late_heights.append(sim.next_bounce_height())
+	check(late_heights.min() >= 170 and late_heights.max() <= 360, "Advanced bounce heights remain controlled")
+	check(late_heights.max() - late_heights.min() > early_heights.max() - early_heights.min(), "Height variety widens at higher scores")
+	sim.reset(SIZE)
+	sim.bounce_rng.seed = 42
+	sim.ball = Vector2(285, sim.paddle.y - 14)
+	sim.velocity = Vector2(0, 600)
+	sim.step(1.0 / 120, 240, SIZE)
+	var launch_height: float = sim.velocity.y * sim.velocity.y / (2 * Sim.GRAVITY)
+	check(sim.velocity.y < 0 and launch_height >= 240 and launch_height <= 300, "Edge steering preserves a forgiving randomized vertical bounce")
+	sim.reset(SIZE)
+	sim.bounce_rng.seed = 99
 	var min_y := 9999.0
 	var max_y := 0.0
 	for i in range(120 * 180):

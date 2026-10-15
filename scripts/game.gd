@@ -127,7 +127,7 @@ func show_menu() -> void:
 		label_at(overlay, "Could not save progress on this device.", pos + Vector2(-45, 365), 390, 15, GOLD)
 
 func show_about() -> void:
-	var pos := make_panel("Keep it simple.", "Sky Bounce 1.1.0")
+	var pos := make_panel("Keep it simple.", "Sky Bounce 1.1.1")
 	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. No tracking. No account.\nScores stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
 	button_at(overlay, "Back", pos + Vector2(0, 200), 300, show_menu, true)
 

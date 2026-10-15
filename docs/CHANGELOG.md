@@ -1,5 +1,15 @@
 # Changes
 
+## 1.1.1
+
+- Opening pace reduced by 35%, with slower early speed progression. Speed still increases as the score rises.
+- Each rebound now selects a fresh height. Beginners get a gentle 240–300px range; the range gradually broadens to 170–360px at higher scores.
+- The opening bounce flight lasts roughly 2.6–2.9 seconds on a stationary platform. Sideways steering does not shorten the randomized vertical arc.
+- Bounce heights are kept below the top boundary so ceiling impacts do not flatten their variety.
+- Android version code increased to 3.
+
+Validation: 43 automated checks pass, including opening speed, height variation and bounds, beginner reaction time, edge-hit height, and a three-minute rally.
+
 ## 1.1.0
 
 - New ball color every 10 points: gold, mint, blue, purple, pink, and orange, cycling for later levels. Color changes blend smoothly; the glow, highlight, trail, and bounce particles follow the ball color.

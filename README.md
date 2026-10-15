@@ -1,6 +1,6 @@
 # Sky Bounce
 
-A playable offline Android game made with **Godot 4.6.3 Standard and GDScript**. Drag to move the platform, keep the ball bouncing, and beat your saved high score. Speed keeps increasing with successful bounces; after five, the platform starts to float vertically. Every 10 points starts a new level with a smoothly changing ball color and matching trail. The star field gently drifts and twinkles.
+A playable offline Android game made with **Godot 4.6.3 Standard and GDScript**. Drag to move the platform, keep the ball bouncing, and beat your saved high score. The opening pace is gentle, with varied bounce heights that broaden gradually as your score rises. Speed keeps increasing with successful bounces; after five, the platform starts to float vertically. Every 10 points starts a new level with a smoothly changing ball color and matching trail. The star field gently drifts and twinkles.
 
 Includes touch controls, gravity and angled rebounds, scoring, increasing difficulty, menus, pause/resume, restart, sound, background pausing, and local high scores. No ads, accounts, or paid libraries.
 

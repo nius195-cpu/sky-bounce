@@ -53,6 +53,23 @@ func run() -> void:
 	check(sim.ball == final_ball, "Lost simulation freezes")
 	sim.reset(SIZE)
 	check(not sim.lost and sim.score == 0, "Restart resets game")
+	var previous_multiplier := 0.0
+	var increasing := true
+	for value in [0, 5, 10, 30, 60, 100, 250, 1000]:
+		sim.score = value
+		increasing = increasing and sim.speed_multiplier() > previous_multiplier
+		previous_multiplier = sim.speed_multiplier()
+	check(increasing, "Speed keeps increasing beyond score 30 and at high scores")
+	sim.reset(SIZE)
+	var initial_ball: Vector2 = sim.ball
+	sim.step(1.0 / 120, 240, SIZE)
+	var early_distance: float = sim.ball.distance_to(initial_ball)
+	sim.reset(SIZE)
+	sim.score = 100
+	sim.step(1.0 / 120, 240, SIZE)
+	check(sim.ball.distance_to(initial_ball) > early_distance * 2, "High scores move the ball faster in actual simulation time")
+	sim.reset(SIZE)
+	check(is_equal_approx(sim.speed_multiplier(), 1), "Restart restores starting speed")
 	var min_y := 9999.0
 	var max_y := 0.0
 	for i in range(120 * 180):
@@ -64,12 +81,19 @@ func run() -> void:
 			break
 	check(sim.score >= 60 and not sim.lost, "Three-minute automated rally remains playable")
 	check(max_y - min_y > 50, "Difficulty moves platform vertically")
-	check(sim.velocity.length() < 1100, "Speed remains bounded")
+	check(sim.velocity.length() < 1100, "Ballistic arc stays stable during the long rally")
 	print("Automated rally: %d bounces" % sim.score)
 	var game = load("res://main.tscn").instantiate()
 	root.add_child(game)
 	await process_frame
 	check(game.mode == "menu", "Main menu opens")
+	check(game.ball_color_for_score(0) == game.ball_color_for_score(9), "Ball color stays consistent within a level")
+	check(game.ball_color_for_score(10) != game.ball_color_for_score(9), "Ball color changes at 10 points")
+	check(game.ball_color_for_score(20) != game.ball_color_for_score(10), "Later level has a new ball color")
+	check(game.ball_color_for_score(60) == game.ball_color_for_score(0), "Color palette cycles for continued play")
+	var old_star: Vector2 = game.star_position(0, SIZE)
+	game._process(1.0)
+	check(game.star_position(0, SIZE) != old_star, "Stars move over time in menus")
 	game.start_game()
 	await process_frame
 	check(game.mode == "playing", "Play starts game")
@@ -83,17 +107,25 @@ func run() -> void:
 	drag.position = Vector2(220, 600)
 	game._unhandled_input(drag)
 	check(is_equal_approx(game.target_x, 280), "Touch drag moves relative to finger")
+	game.sim.score = 10
+	var previous_tint: Color = game.ball_tint
+	game._process(0.1)
+	check(game.ball_tint != previous_tint and game.ball_tint != game.ball_color_for_score(10), "Milestone color transition is gradual")
 	game.pause_game()
+	var paused_sky: float = game.sky_time
+	var paused_tint: Color = game.ball_tint
 	var paused_ball: Vector2 = game.sim.ball
 	for i in range(5):
 		await physics_frame
 	check(game.mode == "paused" and game.sim.ball == paused_ball, "Pause freezes physics")
+	check(game.sky_time == paused_sky and game.ball_tint == paused_tint, "Pause freezes star and ball-color animation")
 	game.resume_game()
 	check(game.mode == "playing", "Resume works")
 	game._notification(Node.NOTIFICATION_APPLICATION_PAUSED)
 	check(game.mode == "paused", "Backgrounding automatically pauses")
 	game.start_game()
 	check(game.sim.score == 0, "Restart clears score")
+	check(game.ball_tint == game.ball_color_for_score(0), "Restart restores first ball color")
 	game.best = 123
 	game.persist()
 	var config := ConfigFile.new()

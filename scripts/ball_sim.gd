@@ -25,6 +25,12 @@ func platform_y(height: float) -> float:
 	var amplitude := minf(maxf(score - 4, 0) * 3.0, 55.0)
 	return height - 146.0 + sin(elapsed * 1.15) * amplitude
 
+# Speed up the whole ballistic arc, so higher scores shorten reaction time
+# rather than spending the extra launch energy bouncing against the ceiling.
+# A logarithmic curve keeps increasing beyond the old score-30 speed cap.
+func speed_multiplier() -> float:
+	return 1.0 + 0.55 * log(1.0 + maxf(score, 0) / 15.0)
+
 # Swept crossing in the paddle's moving frame prevents tunnelling.
 func step(dt: float, target_x: float, size: Vector2) -> bool:
 	if lost:
@@ -35,8 +41,9 @@ func step(dt: float, target_x: float, size: Vector2) -> bool:
 	paddle.x = clampf(target_x, PADDLE_WIDTH / 2 + 10, size.x - PADDLE_WIDTH / 2 - 10)
 	paddle.y = platform_y(size.y)
 	var old_ball := ball
-	velocity.y += GRAVITY * dt
-	ball += velocity * dt
+	var motion_dt := dt * speed_multiplier()
+	velocity.y += GRAVITY * motion_dt
+	ball += velocity * motion_dt
 	if ball.x < RADIUS:
 		ball.x = RADIUS + (RADIUS - ball.x)
 		velocity.x = absf(velocity.x)
@@ -55,7 +62,7 @@ func step(dt: float, target_x: float, size: Vector2) -> bool:
 		var paddle_x := lerpf(old_paddle.x, paddle.x, fraction)
 		if absf(cross_x - paddle_x) <= PADDLE_WIDTH / 2 + RADIUS * 0.5:
 			var offset := clampf((cross_x - paddle_x) / (PADDLE_WIDTH / 2), -1, 1)
-			var speed := minf(640 + score * 7, 850)
+			var speed := 640.0
 			var movement := clampf((paddle.x - old_paddle.x) / dt, -450, 450)
 			velocity.x = clampf(offset * 290 + movement * 0.12, -340, 340)
 			velocity.y = -sqrt(speed * speed - velocity.x * velocity.x)

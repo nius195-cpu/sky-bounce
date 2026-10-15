@@ -1,6 +1,6 @@
 # Sky Bounce
 
-A playable offline Android game made with **Godot 4.6.3 Standard and GDScript**. Drag to move the platform, keep the ball bouncing, and beat your saved high score. Speed increases with successful bounces; after five, the platform starts to float vertically.
+A playable offline Android game made with **Godot 4.6.3 Standard and GDScript**. Drag to move the platform, keep the ball bouncing, and beat your saved high score. Speed keeps increasing with successful bounces; after five, the platform starts to float vertically. Every 10 points starts a new level with a smoothly changing ball color and matching trail. The star field gently drifts and twinkles.
 
 Includes touch controls, gravity and angled rebounds, scoring, increasing difficulty, menus, pause/resume, restart, sound, background pausing, and local high scores. No ads, accounts, or paid libraries.
 
@@ -38,7 +38,7 @@ godot --headless --editor --import --quit
 godot --headless --script res://tests/run.gd
 ```
 
-The suite covers 25 physics and game-flow checks, including fast-ball collisions, score handling, difficulty, touch dragging, pause/resume, background pause, and saving high scores. It also simulates a three-minute rally. The suite writes test scores to its runtime user-data folder; use a separate `XDG_DATA_HOME` on Linux to keep desktop play scores separate. Real-device touch, display, and sound testing remains necessary.
+The suite covers physics and game-flow checks, including fast-ball collisions, score handling, difficulty, touch dragging, pause/resume, background pause, and saving high scores. It also simulates a three-minute rally. The suite writes test scores to its runtime user-data folder; use a separate `XDG_DATA_HOME` on Linux to keep desktop play scores separate. Real-device touch, display, and sound testing remains necessary.
 
 ## Files
 

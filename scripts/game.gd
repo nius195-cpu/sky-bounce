@@ -4,6 +4,10 @@ const Sim = preload("res://scripts/ball_sim.gd")
 const INK := Color("eaf2ff")
 const MINT := Color("62e7d4")
 const GOLD := Color("ffce68")
+const COLOR_INTERVAL := 10
+const BALL_PALETTE := [Color("ffce68"), Color("62e7d4"), Color("72b7ff"), Color("bb9aff"), Color("ff8fa9"), Color("ffad72")]
+var sky_time := 0.0
+var ball_tint := GOLD
 var sim = Sim.new()
 var mode := "menu"
 var best := 0
@@ -117,13 +121,13 @@ func show_menu() -> void:
 	button_at(overlay, "Play", pos, 300, start_game, true)
 	button_at(overlay, "Sound: " + ("on" if sound_enabled else "off"), pos + Vector2(0, 70), 300, toggle_sound)
 	label_at(overlay, "PERSONAL BEST   %d" % best, pos + Vector2(-40, 153), 380, 19, GOLD)
-	label_at(overlay, "Drag anywhere below the score.\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.", pos + Vector2(-45, 208), 390, 16, Color("a7b8dc"))
+	label_at(overlay, "Drag anywhere below the score.\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nNew ball color every 10 bounces.", pos + Vector2(-45, 208), 390, 16, Color("a7b8dc"))
 	button_at(overlay, "About & privacy", pos + Vector2(0, 300), 300, show_about)
 	if storage_warning:
 		label_at(overlay, "Could not save progress on this device.", pos + Vector2(-45, 365), 390, 15, GOLD)
 
 func show_about() -> void:
-	var pos := make_panel("Keep it simple.", "Sky Bounce 1.0.0")
+	var pos := make_panel("Keep it simple.", "Sky Bounce 1.1.0")
 	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. No tracking. No account.\nScores stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
 	button_at(overlay, "Back", pos + Vector2(0, 200), 300, show_menu, true)
 
@@ -137,6 +141,7 @@ func start_game() -> void:
 	finger = -1
 	sim.reset(get_viewport_rect().size)
 	target_x = sim.paddle.x
+	ball_tint = GOLD
 	trail.clear()
 	sparks.clear()
 	make_hud()
@@ -148,7 +153,7 @@ func make_hud() -> void:
 	var w := get_viewport_rect().size.x
 	score_label = label_at(hud, str(sim.score), Vector2(w / 2 - 65, 42), 130, 42)
 	best_label = label_at(hud, "BEST %d" % best, Vector2(12, 59), 110, 15, GOLD)
-	level_label = label_at(hud, "WARM UP", Vector2(w / 2 - 100, 100), 200, 12, MINT)
+	level_label = label_at(hud, level_text(), Vector2(w / 2 - 100, 100), 200, 12, MINT)
 	button_at(hud, "Ⅱ", Vector2(w - 72, 46), 54, pause_game)
 
 func pause_game() -> void:
@@ -195,6 +200,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventScreenDrag and event.index == finger:
 		target_x = event.position.x + drag_offset
 
+func ball_color_for_score(value: int) -> Color:
+	return BALL_PALETTE[(maxi(value, 0) / COLOR_INTERVAL) % BALL_PALETTE.size()]
+
+func level_text() -> String:
+	return "LEVEL %d · %s" % [sim.score / COLOR_INTERVAL + 1, "FLOAT MODE" if sim.score >= 5 else "WARM UP"]
+
+func star_position(index: int, screen: Vector2) -> Vector2:
+	var depth := float(index % 3 + 1)
+	return Vector2(
+		fposmod(index * 137.3 + 31 + sin(sky_time * 0.12 + index) * depth * 3, screen.x),
+		fposmod(index * 83.7 + 132 + sky_time * (3 + depth * 3), screen.y))
+
+func _process(dt: float) -> void:
+	if mode != "paused":
+		sky_time += dt
+		ball_tint = ball_tint.lerp(ball_color_for_score(sim.score), 1.0 - exp(-6.0 * dt))
+	queue_redraw()
+
 func _physics_process(dt: float) -> void:
 	var screen := get_viewport_rect().size
 	if screen != last_size:
@@ -219,7 +242,8 @@ func _physics_process(dt: float) -> void:
 			trail.pop_back()
 		score_label.text = str(sim.score)
 		best_label.text = "BEST %d" % best
-		level_label.text = "FLOAT MODE" if sim.score >= 5 else "WARM UP"
+		level_label.text = level_text()
+		level_label.add_theme_color_override("font_color", ball_tint)
 		for i in range(sparks.size() - 1, -1, -1):
 			sparks[i].life -= dt
 			sparks[i].p += sparks[i].v * dt
@@ -254,18 +278,19 @@ func _draw() -> void:
 		var a := float(i) / 12
 		draw_circle(Vector2(screen.x * 0.8, screen.y * 0.32), 260 - i * 17, Color(0.1, 0.18, 0.30, 0.025 + a * 0.005))
 	for i in range(44):
-		var p := Vector2(fmod(i * 137.3 + 31, screen.x), fmod(i * 83.7 + 132, screen.y))
-		draw_circle(p, 1.4 if i % 3 == 0 else 0.8, Color(0.56, 0.68, 0.88, 0.22))
+		var p := star_position(i, screen)
+		var twinkle := 0.18 + 0.07 * sin(sky_time * 0.7 + i * 1.9)
+		draw_circle(p, 1.4 if i % 3 == 0 else 0.8, Color(0.56, 0.68, 0.88, twinkle))
 	draw_line(Vector2(24, 140), Vector2(screen.x - 24, 140), Color("263452"), 1)
 	if mode == "playing" or mode == "paused" or mode == "over":
 		for i in range(trail.size() - 1, -1, -1):
 			var strength := 1.0 - float(i) / maxf(1, trail.size())
-			draw_circle(trail[i], 3 + strength * 8, Color(1, 0.78, 0.38, strength * 0.16))
+			draw_circle(trail[i], 3 + strength * 8, Color(ball_tint, strength * 0.16))
 		for spark in sparks:
-			draw_circle(spark.p, 3, Color(0.38, 0.91, 0.83, spark.life * 2))
-		draw_circle(sim.ball, 22, Color(1, 0.8, 0.4, 0.06))
-		draw_circle(sim.ball, Sim.RADIUS, GOLD)
-		draw_circle(sim.ball + Vector2(-4, -4), 4, Color("fff0c1"))
+			draw_circle(spark.p, 3, Color(ball_tint, spark.life * 2))
+		draw_circle(sim.ball, 22, Color(ball_tint, 0.06))
+		draw_circle(sim.ball, Sim.RADIUS, ball_tint)
+		draw_circle(sim.ball + Vector2(-4, -4), 4, ball_tint.lightened(0.65))
 		var rect := Rect2(sim.paddle - Vector2(56, 0), Vector2(112, 16))
 		var style := StyleBoxFlat.new()
 		style.bg_color = INK if sim.bounce_flash > 0 else MINT

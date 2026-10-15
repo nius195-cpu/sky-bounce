@@ -1,66 +1,53 @@
 # Sky Bounce
 
-A complete, offline portrait game for Android, built with **Godot 4.6.3 Standard** (free, no paid libraries). Drag anywhere below the score to slide the platform. Keep the ball alive. Edge hits steer it; every bounce adds a point and increases speed. After five bounces, the platform begins moving vertically. Speed and movement are capped to keep the game playable.
+A playable offline Android game made with **Godot 4.6.3 Standard and GDScript**. Drag to move the platform, keep the ball bouncing, and beat your saved high score. Speed increases with successful bounces; after five, the platform starts to float vertically.
 
-Includes menus, pause/resume, replay, sound toggle, automatic pause when backgrounded, local high scores, original vector art, synthesized audio, Android export presets, and an Android build workflow.
+Includes touch controls, gravity and angled rebounds, scoring, increasing difficulty, menus, pause/resume, restart, sound, background pausing, and local high scores. No ads, accounts, or paid libraries.
 
-## Start here — no programming required
+## Install on your Android phone
 
-**What you have:** the full game source and Android build configuration. **What you do not yet have:** a compiled APK or a signed Play Store bundle. This environment had Godot but no Android SDK/export templates; a network permission request was cancelled. Android compilation and real-device testing could not be completed here. The included cloud build is configured but has not been run here.
+1. In the GitHub repository, open **Actions → Build Android installer → Run workflow** and choose `main`.
+2. When the build is green, open the run and download the **sky-bounce-android-installer** artifact.
+3. Unzip it, transfer **sky-bounce.apk** to your phone, and open it to install. Allow installation from your file app/browser if Android asks.
 
-### Play on your computer now
+The workflow also runs on pushes to `main` and pull requests. No release signing or Google Play setup is required. The APK supports Android 7.0+ on ARM64 phones and x86_64 emulators.
 
-1. Download **Godot 4.6.3 Standard** for your computer from https://godotengine.org/download/archive/4.6.3-stable/ (not the .NET edition).
-2. Unzip this project. Open Godot, choose **Import**, select `project.godot`, then **Import & Edit**.
-3. Press the **Play triangle** at the upper right (or F6/F5 as offered by the editor). Click Play inside the game.
-4. Click and drag in the play area to move. Arrow keys also work; P or Escape pauses. Space starts a game from the menu or game-over screen.
+See [the Android build guide](docs/ANDROID.md) for toolchain versions, exact build steps, troubleshooting, and phone tests.
 
-### Get an Android installer without setting up Android Studio
+## Actual Android project
 
-Use the included GitHub Actions workflow. This requires a GitHub account; standard Actions allowances generally cover a small public project. Check your account's usage limits.
+`android/build/` contains the Gradle wrapper, Android build configuration, manifest, and Java activity from Godot's matching official template. The export preset builds an APK using this Gradle project. Large engine binaries are restored automatically with pinned checksums rather than stored in Git.
 
-1. On GitHub, create an empty repository named `sky-bounce`. Choose a public repository if you want to use the public free build allowance. Do not put signing keys or private information in it.
-2. In the repository choose **Add file → Upload files**. Upload the **contents** of the unzipped project, including `project.godot`, `main.tscn`, `scripts`, `art`, `tests`, and `export_presets.cfg` at the repository root. The outer `sky-bounce` folder itself should not be at the root.
-3. Hidden folders can be missed by file pickers. Ensure `.github/workflows/android.yml` exists in the repository. If necessary, choose **Add file → Create new file**, enter `.github/workflows/android.yml` as the filename, paste the contents of the supplied workflow file, and commit it. This is a file-copy step; no programming changes are needed.
-4. Open **Actions → Build Android installer**. The commit starts a build automatically; you can also use **Run workflow**. The first build downloads Godot and the Android tools and may take several minutes.
-5. When the run is green, open it and download the **sky-bounce-android-installer** artifact at the bottom. Unzip it to get `sky-bounce.apk`.
-6. Send that APK to your Android phone, open it, and allow **Install unknown apps** for that file app/browser when Android prompts. Install and play. The build supports Android 7.0+ on ARM64 phones and x86_64 emulators; old 32-bit-only phones are excluded.
+Use the provided build entry point so the APK contains the game assets as well as the Android shell:
 
-This is a debug APK for testing, not the file to upload to Google Play. Each cloud build generates a new debug signing key. To install a later debug build, you may need to uninstall the previous one first, which deletes its saved score. A stable release signing key is needed for real updates.
+```sh
+# With Godot 4.6.3, JDK 17, and the Android SDK installed and configured:
+bash tools/build_android.sh
+```
 
-If the cloud build fails, its red step contains the error; the cloud build has not been validated in this environment. The local export option below avoids dependence on GitHub Actions.
+Output: `builds/sky-bounce.apk`, signed with a local debug testing key. The build runs the gameplay tests and verifies APK contents and signing before CI uploads the artifact. This testing key is not a production signing key.
 
-### Local Android export option
+## Play on a computer
 
-1. Open the project in Godot 4.6.3 Standard. Use **Editor → Manage Export Templates → Download and Install** for the matching 4.6.3 templates.
-2. Install Android Studio (free) and JDK 17. In Android Studio's SDK Manager, install Android SDK Platform 36, Platform Tools, Command-line Tools, and Build Tools 35.0.1 (also 36.0.0 for the release Gradle build). Accept the SDK licenses.
-3. In Godot **Editor → Editor Settings → Export → Android**, select your Java SDK and Android SDK directories. Use Godot's current Android export instructions if the editor reports a missing dependency: https://docs.godotengine.org/en/stable/tutorials/export/exporting_for_android.html
-4. **Project → Export → Android → Export Project**. Leave **Export With Debug** checked and save to `builds/sky-bounce.apk`. Godot can generate a debug keystore if needed; see its Android export instructions for the debug signing setup.
-5. Transfer the APK to your phone and install it as above.
+Download [Godot 4.6.3 Standard](https://godotengine.org/download/archive/4.6.3-stable/), import `project.godot`, and press the Play triangle. Click and drag in the play area; arrow keys also work. P/Escape pauses and Space starts a game from the menu or game-over screen.
 
-## Before Google Play publication
-
-See [docs/PUBLISHING.md](docs/PUBLISHING.md). Publication requires an account owner and a private signing key. Neither was created here. No store upload, account enrollment, or paid service was performed.
-
-## Tests and verification
-
-From this folder, with Godot 4.6.3 installed:
+## Gameplay tests
 
 ```sh
 godot --headless --editor --import --quit
 godot --headless --script res://tests/run.gd
 ```
 
-The suite passed **25 checks** on Godot 4.6.3, including wall and fast-ball collisions, angled rebounds, single-point scoring, bounds, misses, reset, capped speed, vertical motion, menu flow, touch dragging, pause/resume, background pause, and saved scores. A three-minute simulated rally reached 94 bounces after the final physics adjustment. Headless startup also passed. The tests use a synthetic player and do not replace hands-on touch, visual, audio, or Android compatibility testing. Tests write a score of 123 in the test runtime's user data; run with a separate `XDG_DATA_HOME` on Linux to keep desktop play scores separate.
+The suite covers 25 physics and game-flow checks, including fast-ball collisions, score handling, difficulty, touch dragging, pause/resume, background pause, and saving high scores. It also simulates a three-minute rally. The suite writes test scores to its runtime user-data folder; use a separate `XDG_DATA_HOME` on Linux to keep desktop play scores separate. Real-device touch, display, and sound testing remains necessary.
 
-## Project layout
+## Files
 
-- `scripts/ball_sim.gd`: fixed-step gravity, moving-frame swept collision, difficulty, and scoring.
-- `scripts/game.gd`: drawing, touch/keyboard input, menus, audio, and persistence.
-- `tests/run.gd`: physics and game-flow checks.
-- `export_presets.cfg`: APK testing and Google Play AAB export configurations.
-- `.github/workflows/android.yml`: automated debug APK build.
-- `art`: original icon and store artwork.
-- `docs`: privacy policy draft, store copy, and release checklist.
+- `project.godot`, `main.tscn`, `scripts/`: the Godot game.
+- `android/build/`: the Android Gradle project.
+- `export_presets.cfg`: Android APK and optional future Play export presets.
+- `tools/`: dependency preparation, APK build, and APK-content verification.
+- `.github/workflows/android.yml`: automatic and manual debug APK builds.
+- `docs/ANDROID.md`: build/install guide.
+- `art/`, `docs/`: artwork and optional future publication materials.
 
-Code: MIT. Original artwork: CC0. Godot engine: MIT plus its bundled third-party notices; see `THIRD_PARTY_NOTICES.md`.
+Code: MIT. Original artwork: CC0. Godot and its Android template: MIT plus bundled notices. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.

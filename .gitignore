@@ -1,0 +1,25 @@
+.godot/
+builds/*
+!builds/.gitkeep
+# Keep the real Android Gradle sources; ignore only downloads and build outputs.
+.gradle/
+android/build/.gradle/
+android/build/build/
+android/build/assetPackInstallTime/build/
+android/build/libs/
+android/build/src/main/assets/
+android/build/assets/
+android/build/assetPackInstallTime/src/
+android/build/local.properties
+android/build/*.keystore
+android/build/.godot/
+*.keystore
+*.jks
+export_credentials.cfg
+__pycache__/
+# Godot regenerates variant manifests, app names, and icons from the export preset.
+android/build/src/debug/
+android/build/src/dev/
+android/build/src/release/
+android/build/res/mipmap*/
+android/build/res/values*/godot_project_name_string.xml

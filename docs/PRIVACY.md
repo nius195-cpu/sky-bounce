@@ -8,7 +8,7 @@ Contact: [your public support email]
 
 Sky Bounce works offline. The app does not collect, transmit, sell, or share personal data. It contains no advertising, analytics, account registration, tracking SDKs, or in-app purchases.
 
-The game stores your best score and sound preference on your device. These values are used only to provide game features. Android cloud backup for this data is disabled. You can remove this information by clearing the app's storage in Android Settings or uninstalling the app.
+The game stores your best scores for Classic and Reverse modes and your sound preference on your device. These values are used only to provide game features. Android cloud backup for this data is disabled. You can remove this information by clearing the app's storage in Android Settings or uninstalling the app.
 
 The app does not request access to your location, camera, microphone, contacts, or files, and does not request internet permission. Google Play may process data independently to distribute the app under Google's own policies.
 

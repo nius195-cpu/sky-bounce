@@ -1,6 +1,7 @@
 extends Node2D
 
 const Sim = preload("res://scripts/ball_sim.gd")
+const Session = preload("res://scripts/play_session.gd")
 const INK := Color("eaf2ff")
 const MINT := Color("62e7d4")
 const GOLD := Color("ffce68")
@@ -8,9 +9,13 @@ const COLOR_INTERVAL := 10
 const BALL_PALETTE := [Color("ffce68"), Color("62e7d4"), Color("72b7ff"), Color("bb9aff"), Color("ff8fa9"), Color("ffad72")]
 var sky_time := 0.0
 var ball_tint := GOLD
-var sim = Sim.new()
+var sim = Session.new()
+var selected_mode := Session.GameMode.CLASSIC
+var high_scores := {"classic": 0, "reverse": 0}
 var mode := "menu"
-var best := 0
+var best: int:
+	get: return high_scores[mode_key()]
+	set(value): high_scores[mode_key()] = value
 var target_x := 240.0
 var finger := -1
 var drag_offset := 0.0
@@ -30,10 +35,7 @@ var storage_warning := false
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
-	var save := ConfigFile.new()
-	if save.load("user://progress.cfg") == OK:
-		best = maxi(0, int(save.get_value("game", "best", 0)))
-		sound_enabled = bool(save.get_value("game", "sound", true))
+	load_progress()
 	audio = AudioStreamPlayer.new()
 	add_child(audio)
 	ui = CanvasLayer.new()
@@ -41,9 +43,26 @@ func _ready() -> void:
 	sim.reset(get_viewport_rect().size)
 	show_menu()
 
+func mode_key() -> String:
+	return "reverse" if selected_mode == Session.GameMode.REVERSE else "classic"
+
+func mode_name() -> String:
+	return "Reverse Mode" if selected_mode == Session.GameMode.REVERSE else "Classic Mode"
+
+func load_progress() -> void:
+	var save := ConfigFile.new()
+	if save.load("user://progress.cfg") == OK:
+		# Existing installations keep their Classic best. Reverse starts fresh.
+		high_scores["classic"] = maxi(0, int(save.get_value("scores", "classic", save.get_value("game", "best", 0))))
+		high_scores["reverse"] = maxi(0, int(save.get_value("scores", "reverse", 0)))
+		sound_enabled = bool(save.get_value("game", "sound", true))
+
 func persist() -> void:
 	var save := ConfigFile.new()
-	save.set_value("game", "best", best)
+	# Retain the legacy key for compatibility with older Classic-only versions.
+	save.set_value("game", "best", high_scores["classic"])
+	save.set_value("scores", "classic", high_scores["classic"])
+	save.set_value("scores", "reverse", high_scores["reverse"])
 	save.set_value("game", "sound", sound_enabled)
 	storage_warning = save.save("user://progress.cfg") != OK
 
@@ -56,6 +75,8 @@ func _notification(what: int) -> void:
 			pause_game()
 		elif mode == "paused":
 			resume_game()
+		elif mode == "selecting":
+			show_menu()
 		else:
 			get_tree().quit()
 
@@ -118,16 +139,32 @@ func show_menu() -> void:
 	mode = "menu"
 	finger = -1
 	var pos := make_panel("Find your rhythm.", "One ball. One platform. Keep it alive.")
-	button_at(overlay, "Play", pos, 300, start_game, true)
+	button_at(overlay, "Play", pos, 300, show_mode_selection, true)
 	button_at(overlay, "Sound: " + ("on" if sound_enabled else "off"), pos + Vector2(0, 70), 300, toggle_sound)
-	label_at(overlay, "PERSONAL BEST   %d" % best, pos + Vector2(-40, 153), 380, 19, GOLD)
-	label_at(overlay, "Drag anywhere below the score.\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nNew ball color every 10 bounces.", pos + Vector2(-45, 208), 390, 16, Color("a7b8dc"))
+	label_at(overlay, "%s BEST   %d" % [mode_key().to_upper(), best], pos + Vector2(-40, 153), 380, 19, GOLD)
+	var drag_hint := "Drag anywhere above the score." if selected_mode == Session.GameMode.REVERSE else "Drag anywhere below the score."
+	label_at(overlay, drag_hint + "\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nNew ball color every 10 bounces.", pos + Vector2(-45, 208), 390, 16, Color("a7b8dc"))
 	button_at(overlay, "About & privacy", pos + Vector2(0, 300), 300, show_about)
 	if storage_warning:
 		label_at(overlay, "Could not save progress on this device.", pos + Vector2(-45, 365), 390, 15, GOLD)
 
+func show_mode_selection() -> void:
+	mode = "selecting"
+	finger = -1
+	var pos := make_panel("Choose your mode.", "Same challenge. A different direction.")
+	button_at(overlay, "Classic Mode", pos, 300, start_mode.bind(Session.GameMode.CLASSIC), true)
+	button_at(overlay, "Reverse Mode", pos + Vector2(0, 70), 300, start_mode.bind(Session.GameMode.REVERSE))
+	button_at(overlay, "Back", pos + Vector2(0, 140), 300, show_menu)
+	label_at(overlay, "CLASSIC BEST   %d" % high_scores["classic"], pos + Vector2(-40, 215), 380, 18, GOLD)
+	label_at(overlay, "REVERSE BEST   %d" % high_scores["reverse"], pos + Vector2(-40, 255), 380, 18, MINT)
+	label_at(overlay, "Reverse: catch the ball at the top.\nDrag left or right in the play area.", pos + Vector2(-40, 310), 380, 16, Color("a7b8dc"))
+
+func start_mode(chosen: Session.GameMode) -> void:
+	selected_mode = chosen
+	start_game()
+
 func show_about() -> void:
-	var pos := make_panel("Keep it simple.", "Sky Bounce 1.1.1")
+	var pos := make_panel("Keep it simple.", "Sky Bounce 1.2.0")
 	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. No tracking. No account.\nScores stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
 	button_at(overlay, "Back", pos + Vector2(0, 200), 300, show_menu, true)
 
@@ -139,7 +176,7 @@ func toggle_sound() -> void:
 func start_game() -> void:
 	mode = "playing"
 	finger = -1
-	sim.reset(get_viewport_rect().size)
+	sim.reset(get_viewport_rect().size, selected_mode)
 	target_x = sim.paddle.x
 	ball_tint = GOLD
 	trail.clear()
@@ -150,11 +187,16 @@ func make_hud() -> void:
 	clear_ui()
 	hud = Control.new()
 	ui.add_child(hud)
-	var w := get_viewport_rect().size.x
-	score_label = label_at(hud, str(sim.score), Vector2(w / 2 - 65, 42), 130, 42)
-	best_label = label_at(hud, "BEST %d" % best, Vector2(12, 59), 110, 15, GOLD)
-	level_label = label_at(hud, level_text(), Vector2(w / 2 - 100, 100), 200, 12, MINT)
-	button_at(hud, "Ⅱ", Vector2(w - 72, 46), 54, pause_game)
+	var screen := get_viewport_rect().size
+	var w := screen.x
+	var score_y := screen.y - 92 if sim.is_reverse() else 42.0
+	var best_y := screen.y - 78 if sim.is_reverse() else 59.0
+	var level_y := screen.y - 120 if sim.is_reverse() else 100.0
+	var pause_y := screen.y - 100 if sim.is_reverse() else 46.0
+	score_label = label_at(hud, str(sim.score), Vector2(w / 2 - 65, score_y), 130, 42)
+	best_label = label_at(hud, "BEST %d" % best, Vector2(12, best_y), 110, 15, GOLD)
+	level_label = label_at(hud, level_text(), Vector2(w / 2 - 100, level_y), 200, 12, MINT)
+	button_at(hud, "Ⅱ", Vector2(w - 72, pause_y), 54, pause_game)
 
 func pause_game() -> void:
 	if mode != "playing":
@@ -175,7 +217,10 @@ func game_over() -> void:
 	mode = "over"
 	finger = -1
 	persist()
-	var pos := make_panel("One more bounce?", "%d bounces  ·  Personal best %d" % [sim.score, best])
+	var summary := "%d bounces  ·  Personal best %d" % [sim.score, best]
+	if sim.is_reverse():
+		summary = "Reverse Mode · " + summary
+	var pos := make_panel("One more bounce?", summary)
 	button_at(overlay, "Play again", pos, 300, start_game, true)
 	button_at(overlay, "Main menu", pos + Vector2(0, 70), 300, show_menu)
 	label_at(overlay, "Tip: hit near the center for a straighter bounce.", pos + Vector2(-60, 154), 420, 15, Color("a7b8dc"))
@@ -187,18 +232,26 @@ func _unhandled_input(event: InputEvent) -> void:
 				pause_game()
 			elif mode == "paused":
 				resume_game()
-		if event.keycode == KEY_SPACE and mode in ["menu", "over"]:
-			start_game()
+			elif mode == "selecting":
+				show_menu()
+		if event.keycode == KEY_SPACE:
+			if mode == "menu":
+				show_mode_selection()
+			elif mode == "over":
+				start_game()
 	if mode != "playing":
 		return
 	if event is InputEventScreenTouch:
-		if event.pressed and finger == -1 and event.position.y > 140:
+		if event.pressed and finger == -1 and touch_in_play_area(event.position):
 			finger = event.index
 			drag_offset = sim.paddle.x - event.position.x
 		elif not event.pressed and event.index == finger:
 			finger = -1
 	elif event is InputEventScreenDrag and event.index == finger:
 		target_x = event.position.x + drag_offset
+
+func touch_in_play_area(point: Vector2) -> bool:
+	return point.y < get_viewport_rect().size.y - 140 if sim.is_reverse() else point.y > 140
 
 func ball_color_for_score(value: int) -> Color:
 	return BALL_PALETTE[(maxi(value, 0) / COLOR_INTERVAL) % BALL_PALETTE.size()]
@@ -281,7 +334,8 @@ func _draw() -> void:
 		var p := star_position(i, screen)
 		var twinkle := 0.18 + 0.07 * sin(sky_time * 0.7 + i * 1.9)
 		draw_circle(p, 1.4 if i % 3 == 0 else 0.8, Color(0.56, 0.68, 0.88, twinkle))
-	draw_line(Vector2(24, 140), Vector2(screen.x - 24, 140), Color("263452"), 1)
+	var border_y := screen.y - 140 if sim.is_reverse() else 140.0
+	draw_line(Vector2(24, border_y), Vector2(screen.x - 24, border_y), Color("263452"), 1)
 	if mode == "playing" or mode == "paused" or mode == "over":
 		for i in range(trail.size() - 1, -1, -1):
 			var strength := 1.0 - float(i) / maxf(1, trail.size())
@@ -291,16 +345,20 @@ func _draw() -> void:
 		draw_circle(sim.ball, 22, Color(ball_tint, 0.06))
 		draw_circle(sim.ball, Sim.RADIUS, ball_tint)
 		draw_circle(sim.ball + Vector2(-4, -4), 4, ball_tint.lightened(0.65))
-		var rect := Rect2(sim.paddle - Vector2(56, 0), Vector2(112, 16))
+		var rect: Rect2 = sim.paddle_rect()
 		var style := StyleBoxFlat.new()
 		style.bg_color = INK if sim.bounce_flash > 0 else MINT
 		style.set_corner_radius_all(8)
 		style.shadow_color = Color(0.38, 0.91, 0.83, 0.16)
 		style.shadow_size = 12
 		draw_style_box(style, rect)
-		draw_line(sim.paddle + Vector2(-36, 5), sim.paddle + Vector2(36, 5), Color("cbfff5"), 2, true)
+		var shine_y := -5.0 if sim.is_reverse() else 5.0
+		draw_line(sim.paddle + Vector2(-36, shine_y), sim.paddle + Vector2(36, shine_y), Color("cbfff5"), 2, true)
+		var danger_y := 25.0 if sim.is_reverse() else screen.y - 25
+		var slant := -8.0 if sim.is_reverse() else 8.0
 		for i in range(14):
 			var x := i * screen.x / 13
-			draw_line(Vector2(x, screen.y - 25), Vector2(x + 10, screen.y - 17), Color(1, 0.42, 0.5, 0.35), 2)
+			draw_line(Vector2(x, danger_y), Vector2(x + 10, danger_y + slant), Color(1, 0.42, 0.5, 0.35), 2)
 		if mode == "playing" and sim.score == 0:
-			draw_string(font, Vector2(screen.x / 2 - 125, screen.y - 72), "←  DRAG TO MOVE  →", HORIZONTAL_ALIGNMENT_CENTER, 250, 17, Color("a7b8dc"))
+			var hint_y := 72.0 if sim.is_reverse() else screen.y - 72
+			draw_string(font, Vector2(screen.x / 2 - 125, hint_y), "←  DRAG TO MOVE  →", HORIZONTAL_ALIGNMENT_CENTER, 250, 17, Color("a7b8dc"))

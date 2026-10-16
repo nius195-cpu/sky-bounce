@@ -1,5 +1,16 @@
 # Changes
 
+## 1.2.0
+
+- Added Reverse Mode: upward gravity, a top platform, downward rebounds, and loss through the top.
+- Added a Play mode selector and independent Classic/Reverse high scores, preserving existing Classic scores.
+- Shared one unchanged Classic physics model through a vertical-coordinate adapter. Speed, varied bounce heights, steering, platform movement, and cosmetics are identical under mirroring.
+- Reverse uses a bottom HUD and the same horizontal touch controls.
+- Added an iPhone/iPad export preset and setup guide. iOS data export is verified; native Xcode signing/build/device testing still requires a Mac and Apple development setup.
+- Android version code increased to 4.
+
+Validation: 85 automated checks pass, including exact Classic regression, mirrored rallies at three aspect ratios, input, collisions, loss, score migration, and persistence.
+
 ## 1.1.1
 
 - Opening pace reduced by 35%, with slower early speed progression. Speed still increases as the score rises.

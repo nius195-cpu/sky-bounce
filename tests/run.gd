@@ -162,5 +162,6 @@ func run() -> void:
 	check(game.mode == "menu", "Main menu return works")
 	game.queue_free()
 	await process_frame
+	await preload("res://tests/reverse_mode.gd").new().run(self, check)
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

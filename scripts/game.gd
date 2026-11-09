@@ -2,6 +2,12 @@ extends Node2D
 
 const Sim = preload("res://scripts/ball_sim.gd")
 const Session = preload("res://scripts/play_session.gd")
+const Cosmetics = preload("res://scripts/cosmetic_progress.gd")
+const Catalog = preload("res://scripts/cosmetic_catalog.gd")
+const Store = preload("res://scripts/progress_store.gd")
+const Painter = preload("res://scripts/cosmetic_painter.gd")
+const Customization = preload("res://scripts/customization_menu.gd")
+var cosmetics := Cosmetics.new()
 const INK := Color("eaf2ff")
 const MINT := Color("62e7d4")
 const GOLD := Color("ffce68")
@@ -50,21 +56,20 @@ func mode_name() -> String:
 	return "Reverse Mode" if selected_mode == Session.GameMode.REVERSE else "Classic Mode"
 
 func load_progress() -> void:
-	var save := ConfigFile.new()
-	if save.load("user://progress.cfg") == OK:
-		# Existing installations keep their Classic best. Reverse starts fresh.
-		high_scores["classic"] = maxi(0, int(save.get_value("scores", "classic", save.get_value("game", "best", 0))))
-		high_scores["reverse"] = maxi(0, int(save.get_value("scores", "reverse", 0)))
-		sound_enabled = bool(save.get_value("game", "sound", true))
+	var save := Store.load_file()
+	high_scores["classic"] = maxi(0, int(save.get_value("scores", "classic", save.get_value("game", "best", 0))))
+	high_scores["reverse"] = maxi(0, int(save.get_value("scores", "reverse", 0)))
+	sound_enabled = bool(save.get_value("game", "sound", true))
+	cosmetics.load_config(save, maxi(high_scores["classic"], high_scores["reverse"]))
 
 func persist() -> void:
 	var save := ConfigFile.new()
-	# Retain the legacy key for compatibility with older Classic-only versions.
 	save.set_value("game", "best", high_scores["classic"])
 	save.set_value("scores", "classic", high_scores["classic"])
 	save.set_value("scores", "reverse", high_scores["reverse"])
 	save.set_value("game", "sound", sound_enabled)
-	storage_warning = save.save("user://progress.cfg") != OK
+	cosmetics.write_config(save)
+	storage_warning = Store.write_file(save) != OK
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
@@ -75,7 +80,7 @@ func _notification(what: int) -> void:
 			pause_game()
 		elif mode == "paused":
 			resume_game()
-		elif mode == "selecting":
+		elif mode in ["selecting", "customizing"]:
 			show_menu()
 		else:
 			get_tree().quit()
@@ -189,6 +194,7 @@ func show_menu() -> void:
 	menu_label(column, "Find your rhythm.", 36)
 	menu_label(column, "One ball. One platform. Keep it alive.", 17, Color("a7b8dc"))
 	menu_button(column, "Play", show_mode_selection, true)
+	menu_button(column, "Customize", show_customization)
 	menu_button(column, "Sound: " + ("on" if sound_enabled else "off"), toggle_sound)
 	menu_label(column, "%s BEST   %d" % [mode_key().to_upper(), best], 19, GOLD)
 	var drag_hint := "Drag anywhere above the score." if selected_mode == Session.GameMode.REVERSE else "Drag anywhere below the score."
@@ -211,6 +217,19 @@ func show_mode_selection() -> void:
 	menu_label(column, "REVERSE BEST   %d" % high_scores["reverse"], 18, MINT)
 	menu_label(column, "Reverse: catch the ball at the top.\nDrag left or right in the play area.", 16, Color("a7b8dc"))
 
+func show_customization(category := "ball") -> void:
+	mode = "customizing"
+	finger = -1
+	Customization.new(self, category).build()
+
+func equip_cosmetic(id: String) -> void:
+	if cosmetics.equip(id):
+		persist()
+		show_customization(Catalog.item(id).category)
+
+func equipped_ball_color() -> Color:
+	return Painter.ball_color(Catalog.item(cosmetics.equipped["ball"]), sky_time, ball_color_for_score(sim.score))
+
 func start_mode(chosen: Session.GameMode) -> void:
 	selected_mode = chosen
 	start_game()
@@ -230,7 +249,7 @@ func start_game() -> void:
 	finger = -1
 	sim.reset(get_viewport_rect().size, selected_mode)
 	target_x = sim.paddle.x
-	ball_tint = GOLD
+	ball_tint = equipped_ball_color()
 	trail.clear()
 	sparks.clear()
 	make_hud()
@@ -284,7 +303,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				pause_game()
 			elif mode == "paused":
 				resume_game()
-			elif mode == "selecting":
+			elif mode in ["selecting", "customizing"]:
 				show_menu()
 		if event.keycode == KEY_SPACE:
 			if mode == "menu":
@@ -320,7 +339,7 @@ func star_position(index: int, screen: Vector2) -> Vector2:
 func _process(dt: float) -> void:
 	if mode != "paused":
 		sky_time += dt
-		ball_tint = ball_tint.lerp(ball_color_for_score(sim.score), 1.0 - exp(-6.0 * dt))
+		ball_tint = ball_tint.lerp(equipped_ball_color(), 1.0 - exp(-6.0 * dt))
 	queue_redraw()
 
 func _physics_process(dt: float) -> void:
@@ -335,6 +354,7 @@ func _physics_process(dt: float) -> void:
 		target_x = clampf(target_x, 66, screen.x - 66)
 		var hit: bool = sim.step(dt, target_x, screen)
 		if hit:
+			cosmetics.record_score(sim.score)
 			if sim.score > best:
 				best = sim.score
 				persist()
@@ -386,6 +406,8 @@ func _draw() -> void:
 		var p := star_position(i, screen)
 		var twinkle := 0.18 + 0.07 * sin(sky_time * 0.7 + i * 1.9)
 		draw_circle(p, 1.4 if i % 3 == 0 else 0.8, Color(0.56, 0.68, 0.88, twinkle))
+	if cosmetics.equipped["background"] != Catalog.DEFAULTS["background"]:
+		Painter.background(self, screen, Catalog.item(cosmetics.equipped["background"]), sky_time)
 	var border_y := screen.y - 140 if sim.is_reverse() else 140.0
 	draw_line(Vector2(24, border_y), Vector2(screen.x - 24, border_y), Color("263452"), 1)
 	if mode == "playing" or mode == "paused" or mode == "over":
@@ -397,6 +419,8 @@ func _draw() -> void:
 		draw_circle(sim.ball, 22, Color(ball_tint, 0.06))
 		draw_circle(sim.ball, Sim.RADIUS, ball_tint)
 		draw_circle(sim.ball + Vector2(-4, -4), 4, ball_tint.lightened(0.65))
+		if cosmetics.equipped["ball"] != Catalog.DEFAULTS["ball"]:
+			Painter.ball(self, sim.ball, Sim.RADIUS, Catalog.item(cosmetics.equipped["ball"]), sky_time, ball_tint)
 		var rect: Rect2 = sim.paddle_rect()
 		var style := StyleBoxFlat.new()
 		style.bg_color = INK if sim.bounce_flash > 0 else MINT
@@ -406,6 +430,8 @@ func _draw() -> void:
 		draw_style_box(style, rect)
 		var shine_y := -5.0 if sim.is_reverse() else 5.0
 		draw_line(sim.paddle + Vector2(-36, shine_y), sim.paddle + Vector2(36, shine_y), Color("cbfff5"), 2, true)
+		if cosmetics.equipped["paddle"] != Catalog.DEFAULTS["paddle"]:
+			Painter.paddle(self, rect, Catalog.item(cosmetics.equipped["paddle"]), sky_time)
 		var danger_y := 25.0 if sim.is_reverse() else screen.y - 25
 		var slant := -8.0 if sim.is_reverse() else 8.0
 		for i in range(14):

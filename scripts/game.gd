@@ -223,7 +223,7 @@ func show_menu() -> void:
 	menu_button(column, "Sound: " + ("on" if sound_enabled else "off"), toggle_sound)
 	menu_label(column, "%s BEST   %d" % [mode_key().to_upper(), best], 19, GOLD)
 	var drag_hint := "Drag anywhere above the score." if selected_mode == Session.GameMode.REVERSE else "Drag anywhere below the score."
-	menu_label(column, drag_hint + "\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nNew ball color every 10 bounces.", 16, Color("a7b8dc"))
+	menu_label(column, drag_hint + "\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nDefault ball changes color every 10 bounces.", 16, Color("a7b8dc"))
 	menu_button(column, "About & privacy", show_about)
 	if storage_warning:
 		menu_label(column, "Could not save progress on this device.", 15, GOLD)

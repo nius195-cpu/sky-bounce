@@ -68,6 +68,7 @@ func _connected() -> void:
 
 func _disconnected() -> void:
 	store_ready = false
+	reconciled = false
 	busy = false
 	querying = false
 	price_label = ""
@@ -95,6 +96,7 @@ func restore() -> void:
 	if querying:
 		return
 	querying = true
+	reconciled = false
 	status = "Restoring purchases…"
 	_deadline = Time.get_ticks_msec() / 1000.0 + 45
 	client.query_product_details(PackedStringArray([PRODUCT_ID]), Client.ProductType.INAPP)
@@ -158,10 +160,12 @@ func _grant(receipt: Dictionary) -> bool:
 		return false
 	if not _processed.has(token):
 		_validating[token] = true
-		if server_verifier.is_valid() and not bool(await server_verifier.call(receipt)):
-			_validating.erase(token)
-			status = "Purchase verification did not complete. Try Restore Purchases."
-			return false
+		if server_verifier.is_valid():
+			var decision = await server_verifier.call(receipt)
+			if not decision is bool or not decision:
+				_validating.erase(token)
+				status = "Purchase verification did not complete. Try Restore Purchases."
+				return false
 		_validating.erase(token)
 		_processed[token] = true
 	_set_owned(true)
@@ -225,6 +229,7 @@ func _updates(response: Dictionary) -> void:
 			pending = false
 			status = "Ultimate Style Pack unlocked. Enjoy your new styles!"
 		else:
+			reconciled = false
 			status = "Purchase could not be validated. Try Restore Purchases."
 	changed.emit()
 
@@ -274,6 +279,8 @@ func _process(_dt: float) -> void:
 		busy = false
 		querying = false
 		status = "The store is taking longer than expected. Try Restore Purchases."
+		if client != null and not store_ready:
+			_reconnect_at = now + 10
 		changed.emit()
 
 func _exit_tree() -> void:

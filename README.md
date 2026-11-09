@@ -1,59 +1,50 @@
 # Sky Bounce
 
-A playable offline mobile game made with **Godot 4.6.3 Standard and GDScript**. Drag to move the platform, keep the ball bouncing, and beat your saved high score. The opening pace is gentle, with varied bounce heights that broaden gradually as your score rises. Speed keeps increasing with successful bounces; after five, the platform starts to float vertically. Every 10 points starts a new level with a smoothly changing ball color and matching trail. The star field gently drifts and twinkles.
+Godot **4.6.3 Standard**, GDScript, Android 7.0+. Drag the paddle to keep bouncing in Classic or Reverse Mode. Both modes retain their existing physics, difficulty progression, controls and separate high scores.
 
-Choose **Classic Mode** (bottom platform, downward gravity) or **Reverse Mode** (top platform, upward gravity) from the Play menu. Each mode keeps its own high score.
+## Test on your Android phone
 
-Includes touch controls, gravity and angled rebounds, scoring, increasing difficulty, menus, pause/resume, restart, sound, background pausing, and local high scores. No ads, accounts, or paid libraries.
+1. Open this repository's **Actions → Build Android installer → Run workflow**.
+2. Select **feature/cosmetics-and-google-play**, leave release mode **none**, and run.
+3. Download **sky-bounce-android-installer** from the successful run, unzip it, and open **sky-bounce.apk** on your phone. Allow installation from your browser/file manager when asked.
 
-## Install on your Android phone
+No Play Console or production signing is needed for this debug APK. Install over an older build only if its signing certificate matches; uninstalling deletes local scores and unlocks. Debug builds do not prove Google Play purchases work.
 
-1. In the GitHub repository, open **Actions → Build Android installer → Run workflow** and choose `main`.
-2. When the build is green, open the run and download the **sky-bounce-android-installer** artifact.
-3. Unzip it, transfer **sky-bounce.apk** to your phone, and open it to install. Allow installation from your file app/browser if Android asks.
+## Cosmetics
 
-The workflow also runs on pushes to `main` and pull requests. No release signing or Google Play setup is required. The APK supports Android 7.0+ on ARM64 phones and x86_64 emulators.
+Customize from the main menu: five unlockable ball colors, five paddle colors and five backgrounds, plus all original defaults. Permanent free unlocks use the highest score across either mode, with the owner-approved [balanced schedule](docs/play-store/PROGRESSION.md). Equipment is saved immediately; existing scores/settings migrate without reset and saves use a validated temporary file plus backup.
 
-See [the Android build guide](docs/ANDROID.md) for toolchain versions, exact build steps, troubleshooting, and phone tests.
+The optional **Sky Bounce Ultimate Style Pack** adds four balls, three paddles and three backgrounds. Product ID: `sky_bounce_style_pack`, intended US base price **$1.99**. The actual purchase button displays the localized Google Play price. No ads, subscriptions, consumables or gameplay advantages. Default ball level colors remain available.
 
-## iPhone and iPad
+Android uses the maintained GodotGooglePlayBilling 3.3.0 plugin / Play Billing 9.1.0. Completed purchases, pending/cancelled/error states, acknowledgement, ownership reconciliation and restoration are implemented. **Real Play purchases have not been tested.** Product activation, a signed Play-installed test build and license testers are required. Client-side receipt checks are not fraud-proof; an asynchronous server-verification hook is provided. See [billing details](docs/billing/INTEGRATION.md).
 
-The shared Godot gameplay supports both modes on iOS. An iOS export preset is included; building/installing a native iOS app requires macOS, Xcode, and your Apple development signing setup. See [the iOS guide](docs/IOS.md). The iOS data export is verified; native iPhone/iPad builds have not been tested here.
+Gameplay and previously saved cosmetics work offline. Billing requires Google Play/network access. iOS retains shared gameplay and free cosmetics; Android billing is unavailable there. No Apple in-app purchase implementation is included. Native iOS builds remain untested; see [iOS guide](docs/IOS.md).
 
-## Actual Android project
+## Develop and verify
 
-`android/build/` contains the Gradle wrapper, Android build configuration, manifest, and Java activity from Godot's matching official template. The export preset builds an APK using this Gradle project. Large engine binaries are restored automatically with pinned checksums rather than stored in Git.
-
-Use the provided build entry point so the APK contains the game assets as well as the Android shell:
-
-```sh
-# With Godot 4.6.3, JDK 17, and the Android SDK installed and configured:
-bash tools/build_android.sh
-```
-
-Output: `builds/sky-bounce.apk`, signed with a local debug testing key. The build runs the gameplay tests and verifies APK contents and signing before CI uploads the artifact. This testing key is not a production signing key.
-
-## Play on a computer
-
-Download [Godot 4.6.3 Standard](https://godotengine.org/download/archive/4.6.3-stable/), import `project.godot`, and press the Play triangle. Click and drag in the play area; arrow keys also work. P/Escape pauses and Space opens mode selection from the menu or restarts from the game-over screen.
-
-## Gameplay tests
+Import `project.godot` in Godot 4.6.3 Standard and press Play. Desktop supports mouse dragging and arrow keys.
 
 ```sh
 godot --headless --editor --import --quit
 godot --headless --script res://tests/run.gd
+python3 tools/check_billing_plugin.py
+# With JDK 17 and the documented Android SDK:
+bash tools/build_android.sh
 ```
 
-The suite covers physics and game-flow checks, including fast-ball collisions, score handling, difficulty, touch dragging, pause/resume, background pause, and saving high scores. It includes three-minute Classic/Reverse trajectory comparisons across phone and tablet aspect ratios, legacy-score migration, separate score persistence, and Reverse touch/control tests. See [Reverse Mode implementation notes](docs/REVERSE_MODE.md). The suite writes test scores to its runtime user-data folder; use a separate `XDG_DATA_HOME` on Linux to keep desktop play scores separate. Real-device touch, display, and sound testing remains necessary.
+Tests use the application user-data directory: isolate `XDG_DATA_HOME` on Linux to protect desktop play progress. A deliberate corrupt-save test prints a ConfigFile error before successfully recovering from its backup. The final RESULT and exit status determine success.
 
-## Files
+## Release preparation
 
-- `project.godot`, `main.tscn`, `scripts/`: the Godot game.
-- `android/build/`: the Android Gradle project.
-- `export_presets.cfg`: Android APK, optional future Play, and iOS Xcode-project export presets.
-- `tools/`: dependency preparation, APK build, and APK-content verification.
-- `.github/workflows/android.yml`: automatic and manual debug APK builds.
-- `docs/ANDROID.md`: build/install guide.
-- `art/`, `docs/`: artwork and optional future publication materials.
+Actions supports manual release mode **unsigned** for a release AAB inspection, or **signed** once the three upload-key secrets are configured. Both build the debug APK first. Artifacts include the AAB and verification report. An unsigned AAB cannot be uploaded to Play or installed directly. A signed AAB is for Play; the debug APK is for direct phone installation. Neither workflow publishes anything.
 
-Code: MIT. Original artwork: CC0. Godot and its Android template: MIT plus bundled notices. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+- [Play Console setup and device test checklist](docs/play-store/CONSOLE_SETUP.md)
+- [Secure signing and GitHub secrets](docs/play-store/RELEASE_SIGNING.md)
+- [Testing evidence and limitations](docs/TESTING.md)
+- [Store listing draft](docs/play-store/STORE_LISTING.md), [privacy draft](docs/play-store/PRIVACY.md), [compliance review](docs/play-store/COMPLIANCE.md)
+- [Artwork and screenshot instructions](docs/play-store/SCREENSHOTS.md), [release notes](docs/play-store/RELEASE_NOTES.md)
+- [Android toolchain details](docs/ANDROID.md), [initial inspection](docs/DEVELOPMENT_AUDIT.md)
+
+Stable application ID: **org.skybounce.keepitup**. Version **1.3.0**, code **6**, target API **36**. Production signing keys/passwords are never committed. Owner review of privacy, SDK data practices, store assets and Play policies is still required; a successful build does not guarantee store approval.
+
+Code MIT; original artwork CC0. See [LICENSE](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).

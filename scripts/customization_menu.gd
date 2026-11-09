@@ -22,6 +22,11 @@ func build() -> void:
 		tab.custom_minimum_size = Vector2(0, 54)
 		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tab.add_theme_font_size_override("font_size", 15)
+	if category == "store":
+		store_panel(column)
+		game.menu_button(column, "Back to styles", game.show_customization.bind("ball"))
+		return
+	game.menu_button(column, "Ultimate Style Pack", game.show_customization.bind("store"))
 	var progress = game.cosmetics
 	var next: Dictionary = progress.next_unlock()
 	if next.is_empty():
@@ -61,6 +66,11 @@ func build() -> void:
 		# Cards size themselves through the parent rather than their own minimum width.
 		button.custom_minimum_size.x = 180
 		button.disabled = not unlocked or equipped
+	store_panel(column)
+	game.menu_button(column, "Back", game.show_menu)
+
+func store_panel(column: VBoxContainer) -> void:
+	var progress = game.cosmetics
 	game.menu_label(column, "Ultimate Style Pack", 24, Color("ffce68"))
 	game.menu_label(column, "10 exclusive styles · One-time purchase\nCosmetic only. No gameplay advantage.", 16)
 	var billing = game.billing
@@ -69,4 +79,3 @@ func build() -> void:
 	buy.disabled = not billing.can_buy()
 	game.menu_button(column, "Restore Purchases", billing.restore)
 	game.menu_label(column, billing.status, 15, Color("a7b8dc"))
-	game.menu_button(column, "Back", game.show_menu)

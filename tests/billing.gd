@@ -13,6 +13,9 @@ func products() -> Dictionary:
 func reject_verification(_purchase: Dictionary) -> bool:
 	return false
 
+func reject_json_verification(_purchase: Dictionary) -> Dictionary:
+	return {"verified":false}
+
 func run(tree: SceneTree, check: Callable) -> void:
 	check.call(Catalog.PREMIUM.size() == 10, "Premium pack contains exactly ten exclusive styles")
 	var profile := Progress.new()
@@ -96,6 +99,10 @@ func run(tree: SceneTree, check: Callable) -> void:
 	fake.on_purchase_updated.emit({"response_code":0,"purchases":[receipt("backend-rejected")]})
 	await tree.process_frame
 	check.call(not profile.premium_owned, "Future server-verification hook can reject a completed SDK purchase")
+	service.server_verifier = reject_json_verification
+	fake.on_purchase_updated.emit({"response_code":0,"purchases":[receipt("backend-invalid-type")]})
+	await tree.process_frame
+	check.call(not profile.premium_owned, "Non-boolean backend response cannot accidentally grant content")
 	service.server_verifier = Callable()
 	fake.on_purchase_updated.emit({"response_code":0,"purchases":[receipt("ack-retry")]})
 	await tree.process_frame

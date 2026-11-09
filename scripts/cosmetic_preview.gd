@@ -8,6 +8,7 @@ func _init(item: Dictionary = {}) -> void:
 	entry = item
 	custom_minimum_size = Vector2(0, 84)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	clip_contents = true
 
 func _process(dt: float) -> void:
 	time += dt

@@ -117,7 +117,7 @@ static func background(canvas: CanvasItem, size: Vector2, entry: Dictionary, tim
 			for i in range(11):
 				var x := (i + 0.3 * layer) * size.x / 10
 				var y := size.y * (0.65 + layer * 0.12)
-				var height := 55 + fmod(i * 37 + layer * 13, 45)
+				var height := minf(55 + fmod(i * 37 + layer * 13, 45), size.y * 0.42)
 				var tint := Color("174b3c").darkened(layer * 0.18)
 				canvas.draw_colored_polygon(PackedVector2Array([Vector2(x, y - height), Vector2(x - 32, y), Vector2(x + 32, y)]), tint)
 				canvas.draw_line(Vector2(x, y - 18), Vector2(x, size.y), tint, 5)
@@ -140,4 +140,5 @@ static func city(canvas: CanvasItem, size: Vector2, time: float, premium: bool) 
 			canvas.draw_circle(rect.position + Vector2(rect.size.x / 2, -7), 2, Color(glow, 0.5 + sin(time + i) * 0.2))
 		for row in range(5):
 			for col in range(2):
-				canvas.draw_rect(Rect2(rect.position + Vector2(8 + col * 13, 14 + row * 20), Vector2(4, 5)), Color("24556b"))
+				var window := Rect2(rect.position + Vector2(rect.size.x * (col + 1) / 3, height * (0.15 + row * 0.15)), Vector2(minf(4, rect.size.x * 0.1), minf(5, height * 0.07)))
+				canvas.draw_rect(window, Color("24556b"))

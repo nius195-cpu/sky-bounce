@@ -166,5 +166,6 @@ func run() -> void:
 	await preload("res://tests/menu_layout.gd").new().run(self, check)
 	await preload("res://tests/cosmetics.gd").new().run(self, check)
 	await preload("res://tests/billing.gd").new().run(self, check)
+	await preload("res://tests/customization_layout.gd").new().run(self, check)
 	print("RESULT: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)

@@ -14,7 +14,7 @@ Starting point: existing repository `nius195-cpu/sky-bounce`, main commit `b57d7
 
 ## Progression assessment
 
-The exact requested 10–1,000 reward thresholds are the current default. A deterministic perfect-play simulation reached 1,000 in 917.2 seconds (about 15 minutes); this is an expert endurance target, not a measured human completion time. An alternative schedule was proposed before changing the requested progression: 10, 20, 30, 40, 50, 65, 80, 100, 125, 150, 175, 200, 250, 300, 350. No balancing change is made without the owner's choice.
+The owner approved the balanced schedule: 10, 20, 30, 40, 50, 65, 80, 100, 125, 150, 175, 200, 250, 300, 350. The reward order is unchanged. A deterministic perfect-play simulation reached 1,000 in 917.2 seconds (about 15 minutes); this is an expert endurance target, not a measured human completion time. An alternative schedule was proposed before changing the requested progression: 10, 20, 30, 40, 50, 65, 80, 100, 125, 150, 175, 200, 250, 300, 350. The balanced schedule was selected explicitly by the owner before it replaced the original thresholds.
 
 ## Free-system validation milestone
 

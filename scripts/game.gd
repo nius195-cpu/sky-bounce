@@ -261,7 +261,7 @@ func start_mode(chosen: Session.GameMode) -> void:
 	start_game()
 
 func show_about() -> void:
-	var pos := make_panel("Keep it simple.", "Sky Bounce 1.2.1")
+	var pos := make_panel("Keep it simple.", "Sky Bounce 1.3.0")
 	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. Optional cosmetic purchase.\nScores and styles stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
 	button_at(overlay, "Back", pos + Vector2(0, 200), 300, show_menu, true)
 

@@ -5,7 +5,7 @@ const Store = preload("res://scripts/progress_store.gd")
 
 func run(tree: SceneTree, check: Callable) -> void:
 	for category in Catalog.CATEGORIES:
-		check.call(Catalog.items(category).size() == 6, "Five free %s cosmetics plus the original" % category)
+		check.call(Catalog.items(category).filter(func(entry): return not entry.get("premium", false)).size() == 6, "Five free %s cosmetics plus the original" % category)
 	for entry in Catalog.FREE:
 		if entry.score == 0:
 			continue

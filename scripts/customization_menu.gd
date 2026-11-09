@@ -52,10 +52,21 @@ func build() -> void:
 		game.menu_label(card, entry.name, 21)
 		var unlocked: bool = progress.is_unlocked(entry.id)
 		var equipped: bool = progress.equipped[category] == entry.id
+		var premium: bool = entry.get("premium", false)
 		var status := "Equipped" if equipped else ("Unlocked" if unlocked else "Locked · Reach %d points" % entry.score)
+		if premium:
+			status = ("Premium · Owned" if progress.premium_owned else "Premium · Ultimate Style Pack") + (" · Equipped" if equipped else "")
 		game.menu_label(card, status, 16, Color("62e7d4") if unlocked else Color("a7b8dc"))
 		var button: Button = game.menu_button(card, "Equipped" if equipped else ("Equip" if unlocked else "Locked"), game.equip_cosmetic.bind(entry.id), unlocked)
 		# Cards size themselves through the parent rather than their own minimum width.
 		button.custom_minimum_size.x = 180
 		button.disabled = not unlocked or equipped
+	game.menu_label(column, "Ultimate Style Pack", 24, Color("ffce68"))
+	game.menu_label(column, "10 exclusive styles · One-time purchase\nCosmetic only. No gameplay advantage.", 16)
+	var billing = game.billing
+	var text: String = "Owned" if progress.premium_owned else ("Buy pack · " + billing.price_label if not billing.price_label.is_empty() else "Purchase unavailable")
+	var buy: Button = game.menu_button(column, text, billing.buy, true)
+	buy.disabled = not billing.can_buy()
+	game.menu_button(column, "Restore Purchases", billing.restore)
+	game.menu_label(column, billing.status, 15, Color("a7b8dc"))
 	game.menu_button(column, "Back", game.show_menu)

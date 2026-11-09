@@ -24,8 +24,21 @@ const FREE := [
 	{"id":"background_forest", "category":"background", "name":"Emerald Forest", "score":350, "style":"forest", "color":"10372e"},
 ]
 
+const PREMIUM := [
+	{"id":"ball_galaxy", "category":"ball", "name":"Galaxy Ball", "score":0, "premium":true, "style":"galaxy", "color":"a888ff"},
+	{"id":"ball_rainbow", "category":"ball", "name":"Rainbow Ball", "score":0, "premium":true, "style":"rainbow", "color":"ff8ad8"},
+	{"id":"ball_fireball", "category":"ball", "name":"Fireball", "score":0, "premium":true, "style":"fireball", "color":"ff7335"},
+	{"id":"ball_chrome", "category":"ball", "name":"Chrome Ball", "score":0, "premium":true, "style":"chrome", "color":"d7e5ee"},
+	{"id":"paddle_pulse", "category":"paddle", "name":"Neon Pulse Paddle", "score":0, "premium":true, "style":"pulse", "color":"60ffe0"},
+	{"id":"paddle_gold", "category":"paddle", "name":"Gold Rush Paddle", "score":0, "premium":true, "style":"gold", "color":"edbd42"},
+	{"id":"paddle_grid", "category":"paddle", "name":"Cyber Grid Paddle", "score":0, "premium":true, "style":"grid", "color":"38d1ff"},
+	{"id":"background_cyberpunk", "category":"background", "name":"Cyberpunk Skyline", "score":0, "premium":true, "style":"cyberpunk", "color":"1c1334"},
+	{"id":"background_aurora", "category":"background", "name":"Aurora Nights", "score":0, "premium":true, "style":"aurora", "color":"0b2534"},
+	{"id":"background_retro", "category":"background", "name":"Retro Arcade", "score":0, "premium":true, "style":"retro", "color":"221237"},
+]
+
 static func all_items() -> Array:
-	return FREE
+	return FREE + PREMIUM
 
 static func item(id: String) -> Dictionary:
 	for entry in all_items():

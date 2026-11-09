@@ -7,7 +7,11 @@ const Catalog = preload("res://scripts/cosmetic_catalog.gd")
 const Store = preload("res://scripts/progress_store.gd")
 const Painter = preload("res://scripts/cosmetic_painter.gd")
 const Customization = preload("res://scripts/customization_menu.gd")
+const Billing = preload("res://scripts/style_billing.gd")
 var cosmetics := Cosmetics.new()
+var billing: Billing
+var customization_category := "ball"
+var _custom_refresh_pending := false
 const INK := Color("eaf2ff")
 const MINT := Color("62e7d4")
 const GOLD := Color("ffce68")
@@ -42,6 +46,11 @@ var storage_warning := false
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	load_progress()
+	billing = Billing.new()
+	add_child(billing)
+	billing.entitlement_changed.connect(_on_entitlement_changed)
+	billing.changed.connect(_on_store_changed)
+	billing.configure(cosmetics.premium_owned)
 	audio = AudioStreamPlayer.new()
 	add_child(audio)
 	ui = CanvasLayer.new()
@@ -71,7 +80,23 @@ func persist() -> void:
 	cosmetics.write_config(save)
 	storage_warning = Store.write_file(save) != OK
 
+func _on_entitlement_changed(owned: bool) -> void:
+	cosmetics.apply_store_entitlement(owned)
+	persist()
+
+func _on_store_changed() -> void:
+	if mode == "customizing" and not _custom_refresh_pending:
+		_custom_refresh_pending = true
+		_refresh_customization.call_deferred()
+
+func _refresh_customization() -> void:
+	_custom_refresh_pending = false
+	if mode == "customizing":
+		show_customization(customization_category)
+
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_RESUMED and billing != null:
+		billing.refresh()
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		if mode == "playing":
 			pause_game()
@@ -219,6 +244,7 @@ func show_mode_selection() -> void:
 
 func show_customization(category := "ball") -> void:
 	mode = "customizing"
+	customization_category = category
 	finger = -1
 	Customization.new(self, category).build()
 
@@ -236,7 +262,7 @@ func start_mode(chosen: Session.GameMode) -> void:
 
 func show_about() -> void:
 	var pos := make_panel("Keep it simple.", "Sky Bounce 1.2.1")
-	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. No tracking. No account.\nScores stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
+	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. Optional cosmetic purchase.\nScores and styles stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
 	button_at(overlay, "Back", pos + Vector2(0, 200), 300, show_menu, true)
 
 func toggle_sound() -> void:
@@ -416,6 +442,8 @@ func _draw() -> void:
 			draw_circle(trail[i], 3 + strength * 8, Color(ball_tint, strength * 0.16))
 		for spark in sparks:
 			draw_circle(spark.p, 3, Color(ball_tint, spark.life * 2))
+		if cosmetics.equipped["background"] != Catalog.DEFAULTS["background"]:
+			draw_circle(sim.ball, Sim.RADIUS + 3, Color(0.02, 0.03, 0.06, 0.9))
 		draw_circle(sim.ball, 22, Color(ball_tint, 0.06))
 		draw_circle(sim.ball, Sim.RADIUS, ball_tint)
 		draw_circle(sim.ball + Vector2(-4, -4), 4, ball_tint.lightened(0.65))

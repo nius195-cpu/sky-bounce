@@ -135,36 +135,88 @@ func make_panel(title: String, subtitle: String) -> Vector2:
 	label_at(overlay, subtitle, Vector2(16, top + 125), screen.x - 32, 17, Color("a7b8dc"))
 	return Vector2((screen.x - 300) / 2, top + 205)
 
+# Menu text owns its natural wrapped height. Containers keep the following
+# control below it, instead of guessing multiline label heights with offsets.
+func menu_column() -> VBoxContainer:
+	clear_ui()
+	overlay = Control.new()
+	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ui.add_child(overlay)
+	var screen := get_viewport_rect().size
+	var shade := ColorRect.new()
+	shade.color = Color(0.025, 0.04, 0.11, 0.90)
+	shade.size = screen
+	overlay.add_child(shade)
+	var scroll := ScrollContainer.new()
+	scroll.position = Vector2(24, 48)
+	scroll.size = screen - Vector2(48, 96)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	overlay.add_child(scroll)
+	var center := CenterContainer.new()
+	center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	center.custom_minimum_size.y = scroll.size.y
+	scroll.add_child(center)
+	var column := VBoxContainer.new()
+	column.custom_minimum_size.x = minf(390, screen.x - 64)
+	column.add_theme_constant_override("separation", 16)
+	center.add_child(column)
+	return column
+
+func menu_label(parent: VBoxContainer, text: String, size: int, color := INK) -> Label:
+	var item := Label.new()
+	item.text = text
+	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	item.add_theme_font_size_override("font_size", size)
+	item.add_theme_color_override("font_color", color)
+	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(item)
+	return item
+
+func menu_button(parent: VBoxContainer, text: String, action: Callable, primary := false) -> Button:
+	var width := minf(300, parent.custom_minimum_size.x)
+	var button := button_at(parent, text, Vector2.ZERO, width, action, primary)
+	button.custom_minimum_size = Vector2(width, 54)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	return button
+
 func show_menu() -> void:
 	mode = "menu"
 	finger = -1
-	var pos := make_panel("Find your rhythm.", "One ball. One platform. Keep it alive.")
-	button_at(overlay, "Play", pos, 300, show_mode_selection, true)
-	button_at(overlay, "Sound: " + ("on" if sound_enabled else "off"), pos + Vector2(0, 70), 300, toggle_sound)
-	label_at(overlay, "%s BEST   %d" % [mode_key().to_upper(), best], pos + Vector2(-40, 153), 380, 19, GOLD)
+	var column := menu_column()
+	menu_label(column, "●  SKY BOUNCE", 18, MINT)
+	menu_label(column, "Find your rhythm.", 36)
+	menu_label(column, "One ball. One platform. Keep it alive.", 17, Color("a7b8dc"))
+	menu_button(column, "Play", show_mode_selection, true)
+	menu_button(column, "Sound: " + ("on" if sound_enabled else "off"), toggle_sound)
+	menu_label(column, "%s BEST   %d" % [mode_key().to_upper(), best], 19, GOLD)
 	var drag_hint := "Drag anywhere above the score." if selected_mode == Session.GameMode.REVERSE else "Drag anywhere below the score."
-	label_at(overlay, drag_hint + "\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nNew ball color every 10 bounces.", pos + Vector2(-45, 208), 390, 16, Color("a7b8dc"))
-	button_at(overlay, "About & privacy", pos + Vector2(0, 300), 300, show_about)
+	menu_label(column, drag_hint + "\nAim with the edges of your platform.\nAt 5 bounces, the platform starts to float.\nNew ball color every 10 bounces.", 16, Color("a7b8dc"))
+	menu_button(column, "About & privacy", show_about)
 	if storage_warning:
-		label_at(overlay, "Could not save progress on this device.", pos + Vector2(-45, 365), 390, 15, GOLD)
+		menu_label(column, "Could not save progress on this device.", 15, GOLD)
 
 func show_mode_selection() -> void:
 	mode = "selecting"
 	finger = -1
-	var pos := make_panel("Choose your mode.", "Same challenge. A different direction.")
-	button_at(overlay, "Classic Mode", pos, 300, start_mode.bind(Session.GameMode.CLASSIC), true)
-	button_at(overlay, "Reverse Mode", pos + Vector2(0, 70), 300, start_mode.bind(Session.GameMode.REVERSE))
-	button_at(overlay, "Back", pos + Vector2(0, 140), 300, show_menu)
-	label_at(overlay, "CLASSIC BEST   %d" % high_scores["classic"], pos + Vector2(-40, 215), 380, 18, GOLD)
-	label_at(overlay, "REVERSE BEST   %d" % high_scores["reverse"], pos + Vector2(-40, 255), 380, 18, MINT)
-	label_at(overlay, "Reverse: catch the ball at the top.\nDrag left or right in the play area.", pos + Vector2(-40, 310), 380, 16, Color("a7b8dc"))
+	var column := menu_column()
+	menu_label(column, "●  SKY BOUNCE", 18, MINT)
+	menu_label(column, "Choose your mode.", 36)
+	menu_label(column, "Same challenge. A different direction.", 17, Color("a7b8dc"))
+	menu_button(column, "Classic Mode", start_mode.bind(Session.GameMode.CLASSIC), true)
+	menu_button(column, "Reverse Mode", start_mode.bind(Session.GameMode.REVERSE))
+	menu_button(column, "Back", show_menu)
+	menu_label(column, "CLASSIC BEST   %d" % high_scores["classic"], 18, GOLD)
+	menu_label(column, "REVERSE BEST   %d" % high_scores["reverse"], 18, MINT)
+	menu_label(column, "Reverse: catch the ball at the top.\nDrag left or right in the play area.", 16, Color("a7b8dc"))
 
 func start_mode(chosen: Session.GameMode) -> void:
 	selected_mode = chosen
 	start_game()
 
 func show_about() -> void:
-	var pos := make_panel("Keep it simple.", "Sky Bounce 1.2.0")
+	var pos := make_panel("Keep it simple.", "Sky Bounce 1.2.1")
 	label_at(overlay, "Made with Godot Engine (MIT license).\nhttps://godotengine.org/license\n\nNo ads. No tracking. No account.\nScores stay on your device.\nOriginal art and synthesized sound.", pos + Vector2(-40, 0), 380, 17, Color("a7b8dc"))
 	button_at(overlay, "Back", pos + Vector2(0, 200), 300, show_menu, true)
 

@@ -1,5 +1,13 @@
 # Changes
 
+## 1.2.1
+
+- Fixed overlapping main-menu and mode-selection text by replacing fixed vertical offsets with automatically sized, spaced controls.
+- Wrapped long text and added scrolling for compact screens, including extra save-warning text and long high scores.
+- Kept gameplay, both physics modes, HUD layouts, saved scores, and cosmetics unchanged.
+- Android version code increased to 5.
+
+
 ## 1.2.0
 
 - Added Reverse Mode: upward gravity, a top platform, downward rebounds, and loss through the top.

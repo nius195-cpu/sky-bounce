@@ -81,14 +81,14 @@ func run(tree: SceneTree, check: Callable) -> void:
 	check.call(game.high_scores["classic"] == 321 and game.high_scores["reverse"] == 0 and not game.sound_enabled, "Legacy score migrates to Classic and sound preference is retained")
 	game.show_menu()
 	var play_button: Button
-	for child in game.overlay.get_children():
+	for child in game.overlay.find_children("*", "Button", true, false):
 		if child is Button and child.text == "Play":
 			play_button = child
 	play_button.pressed.emit()
 	check.call(game.mode == "selecting", "Play opens the mode selection menu")
 	var reverse_button: Button
 	var classic_button: Button
-	for child in game.overlay.get_children():
+	for child in game.overlay.find_children("*", "Button", true, false):
 		if child is Button and child.text == "Reverse Mode":
 			reverse_button = child
 		if child is Button and child.text == "Classic Mode":
